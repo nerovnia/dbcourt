@@ -3,5 +3,11 @@ html
   head
     title= title
     link(rel='stylesheet', href='/stylesheets/style.css')
+    if node_env === 'production'
+      script(src="react/umd/react.production.min.js")
+      script(src="react-dom/umd/react-dom.production.min.js")
+    else  
+      script(src="react/umd/react.development.js")
+      script(src="react-dom/umd/react-dom.development.js")
   body
     block content
