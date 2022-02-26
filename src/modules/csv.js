@@ -1,6 +1,7 @@
 'use strict'
 const fs = require("fs");
 const readline = require('readline');
+const db = require('../modules/db');
 
 module.exports.convert_csv = (path) => {
   console.log('arr');
@@ -11,11 +12,13 @@ module.exports.convert_csv = (path) => {
   });
   let arr = [];
   let str_count = 0;
+  console.log(`Start: ${new Date().getMilliseconds()}`);
   rl.on('line', (input) => {
     if (str_count > 0) {
-      arr.push(input.split('\t'));
+      arr.push(input.replaceAll('"','').split('\t'));
       if (str_count % max_pull === 0) {
-        console.log(arr.length);
+        //console.log(arr.length);
+        db.fill__db(arr);
         arr = [];
       }
     }
@@ -23,7 +26,8 @@ module.exports.convert_csv = (path) => {
   });
   rl.on('close', () => {
     if(arr.length > 0) {
-      console.log(arr.length);
+      db.filldb(arr);
+      console.log(`Total ${--str_count} read records.`);
     }
   });
 }

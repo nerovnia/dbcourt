@@ -1,34 +1,32 @@
 const cn = require('better-sqlite3');
-const {parse} = require('csv-parse/sync');
+var http = require('../modules/http.js');
+var cfg = require('../cfg/cfg');
 
-let sql = `CREATE TABLE IF NOT EXISTS edrsr (
-  doc_id INTEGER,
-  court_code TEXT,
-  judgment_code INTEGER,
-  justice_kind INTEGER,
-  category_code INTEGER,
-  cause_num TEXT,
-  adjudication_date DATETIME,
-  receipt_date DATETIME,
-  judge TEXT,
-  doc_url TEXT,
-  status INTEGER,
-  date_publ DATETIME
-);`;
+let db = cn(cfg.db_path);  // { verbose: console.log }
+function create_tables() {
+  cfg.sql_create_tables.forEach(sql => {
+    let stmt = db.exec(sql);
+  });
+}
 
-module.exports.filldb = (path) => {
-  let arr_convpos = [6, 7, 11];
-  let arr = [86740127,"0713",2,5,41080,"309/3690/19","2019-12-24 00:00:00+02","2020-01-01 00:00:00+02","Довжанин М. М.","http://od.reyestr.court.gov.ua/files/43/fac178ca20d41d88a699d8ef1948a0e2.rtf",1,"2020-01-02 00:00:00+02"];
-  console.log(path);
-  let db = cn(path, { verbose: console.log });  
-  let stmt = db.exec(sql);
-  console.log(stmt);
-  
-  const insert = db.prepare(`
-    INSERT INTO edrsr 
-      (doc_id, court_code, judgment_code, justice_kind, category_code, cause_num, adjudication_date, receipt_date, judge, doc_url, status, date_publ) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(arr);
-      
-   
+module.exports.fill__db = (rec_arr) => {
+  create_tables();
+  const insert = db.prepare(`INSERT INTO edrsr 
+    (doc_id, court_code, judgment_code, justice_kind, category_code, cause_num, adjudication_date, receipt_date, judge, doc_url, status, date_publ) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+
+  const insertMany = db.transaction((ra) => {
+    for (const rec of ra) insert.run(rec);
+  });
+
+  insertMany(rec_arr);
+}
+
+module.exports.fill__doc_size = () => {
+  const stmt = db.prepare('SELECT doc_id, doc_url FROM edrsr');
+  let count = 0;
+  for (const doc of stmt.iterate()) {
+    setTimeout(() => { http.getFileSize(doc.doc_url); console.log(count);count++;}, 2000);
+    //    console.log(http.getFileSize(doc.doc_url));
+  }
 }
